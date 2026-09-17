@@ -1170,7 +1170,7 @@ function isAssemblyCompleted(transferred){
 // В боевой ветке (white-wizard, продакшен) флаг должен быть false
 // (или блок вообще не переносить туда) — п.10 исходного ТЗ требует,
 // чтобы после assemblyCompleted===true Сборка не проигрывалась повторно.
-const TEST_FORCE_ASSEMBLY_REPLAY = DAY13_TEST_SITE;
+const TEST_FORCE_ASSEMBLY_REPLAY = true;
 function isAssemblyCompletedForUI(transferred){
   if(TEST_FORCE_ASSEMBLY_REPLAY) return false;
   return isAssemblyCompleted(transferred);
