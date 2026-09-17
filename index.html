@@ -522,15 +522,8 @@ body{
   object-fit:contain;
   opacity:0;
   transform:translate(-50%,-50%);
-  transition:opacity .9s ease, filter .9s ease;
+  transition:opacity .9s ease;
   pointer-events:none;
-  /* Логотип не меняется по форме/размеру — только читаемость на светлой
-     сердцевине: лёгкий контактный контур + мягкое разделяющее свечение. */
-  filter:
-    drop-shadow(0 1px 2px rgba(28,18,12,.5))
-    drop-shadow(0 0 14px rgba(28,18,12,.32))
-    drop-shadow(0 0 30px rgba(28,18,12,.16))
-    brightness(1.08) contrast(1.08) saturate(1.08);
 }
 .assembly-center-logo.show{opacity:1}
 
@@ -538,13 +531,14 @@ body{
   .assembly-caption{
     width:min(40vw, 220px);
     right:calc((100vw - min(100vw, calc(100vh * 1244 / 1660))) / 2 + 5.6%);
-    /* Раньше bottom считался от края экрана, и при узком/высоком экране
-       подпись уезжала ниже фактического нижнего края картинки (letterbox).
-       Теперь bottom = отступ до низа картинки + safe-margin внутрь тёмной
-       части изображения + safe-area на случай home-indicator. */
+    /* bottom = отступ до истинного нижнего края картинки (letterbox-gap)
+       + небольшой фиксированный запас (24px) внутрь тёмной зоны у самого
+       низа изображения — ниже лепестков, но ещё внутри картинки.
+       Единственное число, которое стоит подстроить после проверки на
+       реальном устройстве/ассете — вот этот запас (сейчас 24px). */
     bottom:calc(
       (100vh - var(--assembly-img-h)) / 2
-      + var(--assembly-img-h) * 0.065
+      + 24px
       + env(safe-area-inset-bottom)
     );
   }
@@ -1145,11 +1139,30 @@ function allTwelveDone(transferred){
   for(let day=1;day<=12;day++) if(!transferred.has(day)) return false;
   return true;
 }
-function isAssemblyReady(transferred){
-  return currentOpenDay===ASSEMBLY_DAY && allTwelveDone(transferred) && !transferred.has(ASSEMBLY_DAY);
-}
+// Источник истины остаётся в Supabase/entries — эта функция читает его как есть
+// и в проде используется без изменений.
 function isAssemblyCompleted(transferred){
   return transferred.has(ASSEMBLY_DAY);
+}
+
+// === TEST BUILD ONLY (white-wizard-day13-test) ============================
+// Заставляет ЭТУ тестовую страницу заново предлагать полную анимацию Сборки
+// по клику на сердцевину, даже если в Supabase уже есть запись
+// day13/assembly/completed. Ничего не удаляет и не переписывает в базе —
+// влияет только на то, как клиент интерпретирует уже прочитанный
+// transferred при выборе между replay и мгновенным финальным экраном.
+// В боевой ветке (white-wizard, продакшен) флаг должен быть false
+// (или блок вообще не переносить туда) — п.10 исходного ТЗ требует,
+// чтобы после assemblyCompleted===true Сборка не проигрывалась повторно.
+const TEST_FORCE_ASSEMBLY_REPLAY = false;
+function isAssemblyCompletedForUI(transferred){
+  if(TEST_FORCE_ASSEMBLY_REPLAY) return false;
+  return isAssemblyCompleted(transferred);
+}
+// ============================================================================
+
+function isAssemblyReady(transferred){
+  return currentOpenDay===ASSEMBLY_DAY && allTwelveDone(transferred) && !isAssemblyCompletedForUI(transferred);
 }
 function wait(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
 
@@ -1281,7 +1294,7 @@ async function startAssembly(){
 function onCenterActivate(){
   if(isAnimating || assemblyRunning) return;
   const transferred = getTransferred();
-  if(isAssemblyCompleted(transferred)){ renderAssemblyFinalState(); return; }
+  if(isAssemblyCompletedForUI(transferred)){ renderAssemblyFinalState(); return; }
   if(isAssemblyReady(transferred)){ startAssembly(); }
 }
 
@@ -1342,7 +1355,7 @@ function updateRouteScreenInfo(){
   routeTodayLabel.textContent = 'Сегодня открыт';
   routeDayMain.textContent = `День ${currentOpenDay} · ${info.seal}`;
   routeDayMeta.textContent = `Печать · ${info.seal}   ·   Тон ${currentOpenDay} · ${info.tone}`;
-  routeHint.textContent = isAssemblyCompleted(getTransferred())
+  routeHint.textContent = isAssemblyCompletedForUI(getTransferred())
     ? 'Путь пройден — можно вернуться в любой день'
     : (currentOpenDay <= 12
       ? 'Нажми на светящийся лепесток, чтобы войти в день'
@@ -1354,7 +1367,7 @@ function render(){
   updateRouteScreenInfo();
   computeGeometry();
   const transferred=getTransferred();
-  const retrospectiveMode = isAssemblyCompleted(transferred);
+  const retrospectiveMode = isAssemblyCompletedForUI(transferred);
   petalsLayer.innerHTML='';raysSvg.innerHTML='';centerAmbient.innerHTML='';
   for(let day=1;day<=12;day++){
     const state=stateFor(day,transferred);
@@ -1379,7 +1392,7 @@ function render(){
   // День 13 — центр (Сборка). Активируется только когда завершены все 12 дней
   // и ведущая открыла день 13; после завершения центр переходит в спокойное assembly-done.
   const assemblyReady = isAssemblyReady(transferred);
-  const assemblyDone = isAssemblyCompleted(transferred);
+  const assemblyDone = isAssemblyCompletedForUI(transferred);
   center.classList.toggle('active-center', assemblyReady);
   center.classList.toggle('assembly-done', assemblyDone);
   if(assemblyReady || assemblyDone){
@@ -1396,7 +1409,7 @@ function render(){
 
 async function openDay(day){
   if(day < 1 || day > 12) return;
-  if(day!==currentOpenDay && !isAssemblyCompleted(getTransferred())) return;
+  if(day!==currentOpenDay && !isAssemblyCompletedForUI(getTransferred())) return;
 
   const file = `den-${String(day).padStart(2,'0')}.html`;
   currentDayPage = day;
