@@ -1019,6 +1019,12 @@ const THRESHOLD_SEEN_PREFIX = '13mirrors-threshold-seen:';
 const ASSEMBLY_DAY = 13;
 const ASSEMBLY_VIDEO_SRC = 'assembly-bloom-v3.mp4';
 const ASSEMBLY_FINAL_IMG_SRC = 'assembly-final-frame-v2.png';
+
+// TEST-ONLY: отдельный GitHub Pages стенд для проверки Дня 13.
+// На рабочем сайте этот флаг всегда false.
+const DAY13_TEST_SITE =
+  location.hostname === 'elenarasprugina.github.io' &&
+  location.pathname.startsWith('/white-wizard-day13-test/');
 // Production integration: Day 13 uses the existing Supabase save_entry/get_completed_days flow.
 // localStorage remains a cache; completion is added locally only after save_entry succeeds.
 
@@ -1471,6 +1477,13 @@ async function claimCode(code){
   return participantId;
 }
 async function loadRouteState(){
+  // TEST-ONLY: тестовый GitHub Pages стенд не зависит от общего current_day
+  // рабочего маршрута и всегда показывает День 13.
+  if(DAY13_TEST_SITE){
+    currentOpenDay=13;
+    return;
+  }
+
   const {data,error}=await supabaseClient.from('route_state').select('current_day').eq('id',1).maybeSingle();
   if(!error && data && data.current_day !== null && data.current_day !== undefined){
     const n=Number(data.current_day);
@@ -1492,6 +1505,15 @@ async function seedTransferredFromSavedEntries(){
       const d=Number(row.day_number ?? row.day ?? row);
       if(Number.isFinite(d) && d>=1 && d<=13) transferred.add(d);
     }
+
+    // TEST-ONLY: на отдельном стенде считаем Дни 1–12 пройденными,
+    // чтобы проверить Сборку сейчас, не меняя общий current_day и не создавая
+    // фиктивные записи 1–12 в Supabase. День 13 сюда НЕ добавляется:
+    // его завершение по-прежнему должно реально записаться через save_entry.
+    if(DAY13_TEST_SITE){
+      for(let d=1;d<=12;d++) transferred.add(d);
+    }
+
     setTransferred(transferred);
   }catch(e){ console.warn('get_completed_days failed',e); }
 }
