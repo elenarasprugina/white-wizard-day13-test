@@ -398,10 +398,11 @@ body{
   overflow:hidden;
   opacity:0;
   transition:opacity .45s ease, background-color .7s ease;
-  /* Высота финального изображения при текущем object-fit:contain —
-     нужна детям (.assembly-caption на мобильном), чтобы привязаться
-     к реальному нижнему краю картинки, а не к краю экрана. */
+  /* Реальные размеры финального изображения при object-fit:contain —
+     нужны детям (.assembly-caption, .assembly-center-logo), чтобы
+     привязываться к истинным краям картинки, а не к краю экрана. */
   --assembly-img-h: min(100vh, calc(100vw * 1660 / 1244));
+  --assembly-img-w: min(100vw, calc(100vh * 1244 / 1660));
 }
 .assembly-shell.show{display:flex;opacity:1}
 .assembly-shell.media-phase{background:#10131a}
@@ -462,18 +463,18 @@ body{
 }
 #assemblyFinalImg.show{opacity:1}
 
-/* Чистая подпись внизу справа: тонкая, без обводки, не заходит на лепестки. */
+/* Чистая подпись в левом верхнем углу: тонкая, без обводки, не заходит на лепестки. */
 .assembly-caption{
   position:absolute;
   z-index:5;
   width:min(38vw, 420px);
-  right:calc((100vw - min(100vw, calc(100vh * 1244 / 1660))) / 2 + 6.2%);
-  bottom:8.6%;
+  left:calc((100vw - var(--assembly-img-w)) / 2 + 6.2%);
+  top:calc((100vh - var(--assembly-img-h)) / 2 + 8.6%);
   display:flex;
-  justify-content:flex-end;
-  align-items:flex-end;
+  justify-content:flex-start;
+  align-items:flex-start;
   opacity:0;
-  transform:translateY(8px);
+  transform:translateY(-8px);
   transition:opacity .96s ease, transform .96s ease;
   pointer-events:none;
 }
@@ -510,18 +511,18 @@ body{
   font-weight:400;
   opacity:.96;
 }
+/* Фирменный знак в правом нижнем углу — отдельно от сердцевины цветка. */
 .assembly-center-logo{
   position:absolute;
   z-index:5;
-  left:50%;
-  top:50%;
+  right:calc((100vw - var(--assembly-img-w)) / 2 + 6.2%);
+  bottom:calc((100vh - var(--assembly-img-h)) / 2 + 8.6%);
   width:min(22vw, 160px);
   max-width:160px;
   min-width:105px;
   height:auto;
   object-fit:contain;
   opacity:0;
-  transform:translate(-50%,-50%);
   transition:opacity .9s ease;
   pointer-events:none;
 }
@@ -529,26 +530,41 @@ body{
 
 @media(max-width:700px){
   .assembly-caption{
-    width:min(40vw, 220px);
-    right:calc((100vw - min(100vw, calc(100vh * 1244 / 1660))) / 2 + 5.6%);
-    /* bottom = отступ до истинного нижнего края картинки (letterbox-gap)
-       + небольшой фиксированный запас (24px) внутрь тёмной зоны у самого
-       низа изображения — ниже лепестков, но ещё внутри картинки.
-       Единственное число, которое стоит подстроить после проверки на
-       реальном устройстве/ассете — вот этот запас (сейчас 24px). */
-    bottom:calc(
+    width:min(46vw, 200px);
+    left:calc(
+      (100vw - var(--assembly-img-w)) / 2
+      + 22px
+      + env(safe-area-inset-left)
+    );
+    /* top = отступ до истинного верхнего края картинки (letterbox-gap)
+       + небольшой фиксированный запас (22px) внутрь тёмной зоны у самого
+       верха изображения — выше лепестков, но ещё внутри картинки. */
+    top:calc(
       (100vh - var(--assembly-img-h)) / 2
-      + 24px
-      + env(safe-area-inset-bottom)
+      + 22px
+      + env(safe-area-inset-top)
     );
   }
   .assembly-caption__lines{gap:4px}
   .assembly-caption__route{font-size:clamp(15px, 2vh, 19px)}
   .assembly-caption__keeper{font-size:clamp(13px, 1.75vh, 17px)}
   .assembly-center-logo{
-    width:min(26vw, 138px);
-    max-width:138px;
-    min-width:92px;
+    width:min(26vw, 120px);
+    max-width:120px;
+    min-width:84px;
+    right:calc(
+      (100vw - var(--assembly-img-w)) / 2
+      + 22px
+      + env(safe-area-inset-right)
+    );
+    /* bottom = отступ до истинного нижнего края картинки (letterbox-gap)
+       + небольшой фиксированный запас (22px) внутрь тёмной зоны у самого
+       низа изображения — ниже лепестков, но ещё внутри картинки. */
+    bottom:calc(
+      (100vh - var(--assembly-img-h)) / 2
+      + 22px
+      + env(safe-area-inset-bottom)
+    );
   }
 }
 
