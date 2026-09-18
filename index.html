@@ -1051,9 +1051,7 @@ const ASSEMBLY_FINAL_IMG_SRC = 'assembly-final-frame-v2.png';
 
 // TEST-ONLY: отдельный GitHub Pages стенд для проверки Дня 13.
 // На рабочем сайте этот флаг всегда false.
-const DAY13_TEST_SITE =
-  location.hostname === 'elenarasprugina.github.io' &&
-  location.pathname.startsWith('/white-wizard-day13-test/');
+const DAY13_TEST_SITE = false;
 // Production integration: Day 13 uses the existing Supabase save_entry/get_completed_days flow.
 // localStorage remains a cache; completion is added locally only after save_entry succeeds.
 
@@ -1170,7 +1168,7 @@ function isAssemblyCompleted(transferred){
 // В боевой ветке (white-wizard, продакшен) флаг должен быть false
 // (или блок вообще не переносить туда) — п.10 исходного ТЗ требует,
 // чтобы после assemblyCompleted===true Сборка не проигрывалась повторно.
-const TEST_FORCE_ASSEMBLY_REPLAY = true;
+const TEST_FORCE_ASSEMBLY_REPLAY = false;
 function isAssemblyCompletedForUI(transferred){
   if(TEST_FORCE_ASSEMBLY_REPLAY) return false;
   return isAssemblyCompleted(transferred);
